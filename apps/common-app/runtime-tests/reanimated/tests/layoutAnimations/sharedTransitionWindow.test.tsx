@@ -148,7 +148,7 @@ describe('Shared transitions and Android layout roots', () => {
         />
       );
       await waitForFrames(3);
-      if (!newTarget) await expectEndpoint('target', 150, 0.7);
+      if (!newTarget && targetDialog) await expectEndpoint('target', 150, 0.7);
       await render(
         <Screens
           active
@@ -210,8 +210,8 @@ describe('Shared transitions and Android layout roots', () => {
     expect(width !== undefined && width > 60 && width < 150).toBe(true);
     expect(results).toBe([]);
     await advanceAnimationTimer(1200);
-    await expectEndpoint('target', 150, 0.7);
     await expectEventually(() => results.length).toBe(1);
+    await expectSettledEndpoint('target', 150, 0.7);
     expect(results).toBe([true]);
   });
 
@@ -278,8 +278,8 @@ describe('Shared transitions and Android layout roots', () => {
       expect(results).toBe([true]);
       expect(candidateResults).toBe([]);
       await expectEndpoint('candidate', 210, 0.8);
-      if (keepTarget) await expectEndpoint('target', 150, 0.7);
-      else await expectEndpoint('source', 60, 0.6);
+      if (keepTarget) await expectSettledEndpoint('target', 150, 0.7);
+      else await expectSettledEndpoint('source', 60, 0.6);
     }
   );
 });
@@ -303,6 +303,24 @@ async function expectEndpoint(
   const props = await getTestComponent(`window-${name}`).getMountedViewProps();
   expect(props?.width).toBe(width, ComparisonMode.PIXEL);
   expect(props?.opacity).toBe(opacity, ComparisonMode.FLOAT_DISTANCE);
+}
+
+async function expectSettledEndpoint(
+  name: 'source' | 'target' | 'candidate',
+  width: number,
+  opacity: number
+) {
+  await expectEventually(async () => {
+    const props = await getTestComponent(
+      `window-${name}`
+    ).getMountedViewProps();
+    return (
+      !!props &&
+      Math.abs(props.width - width) < 0.5 &&
+      Math.abs(props.opacity - opacity) < 0.001
+    );
+  }).toBe(true);
+  await expectEndpoint(name, width, opacity);
 }
 
 function mountedWidth(tag: number) {

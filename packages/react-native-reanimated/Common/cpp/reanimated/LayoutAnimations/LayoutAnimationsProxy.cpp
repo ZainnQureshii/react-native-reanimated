@@ -481,6 +481,9 @@ void LayoutAnimationsProxy::updateLightTree(
   ReanimatedSystraceSection s("updateLightTree");
   auto &filteredMutations = transaction.filteredMutations;
   filteredMutations.reserve(filteredMutations.size() + mutations.size());
+#ifdef ANDROID
+  std::vector<RestoreRequest> provisionalSharedHides;
+#endif
   std::unordered_set<Tag> inserted, moved, deleted;
   std::unordered_map<Tag, ShadowView> updatedViews;
   std::unordered_map<Tag, std::vector<AncestorOrigin>> oldChains;
@@ -685,9 +688,12 @@ void LayoutAnimationsProxy::updateLightTree(
               mutation.parentTag,
               propsParserContext));
         } else if (
-            sharedTag && isInsideInactiveBoundary(node) && !isOutsideSurfaceLayoutRoot(node) &&
+            sharedTag && isInsideInactiveBoundary(node) &&
             !layoutAnimationsManager_->shouldReduceSharedTransition(tag)) {
           hideInSharedElement(*sharedTag, node);
+#ifdef ANDROID
+          provisionalSharedHides.push_back({*sharedTag, node});
+#endif
           filteredMutations.push_back(
               ShadowViewMutation::InsertMutation(mutation.parentTag, mutation.newChildShadowView, hostIndex));
           filteredMutations.push_back(createPropsUpdate(
@@ -746,6 +752,13 @@ void LayoutAnimationsProxy::updateLightTree(
       }
     }
   }
+#ifdef ANDROID
+  for (const auto &request : provisionalSharedHides) {
+    if (isOutsideSurfaceLayoutRoot(request.node)) {
+      transaction.restoreRequests.push_back(request);
+    }
+  }
+#endif
   react_native_assert(removedSubtreeRoots.empty() && "React removed a view without deleting it");
 }
 
