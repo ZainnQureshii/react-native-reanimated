@@ -1380,9 +1380,13 @@ void LayoutAnimationsProxy::handleSharedTransitionsStart(
       if (phase == LayoutAnimationPhase::NONE) {
         continue;
       }
-      const auto config = layoutAnimationsManager_->getSharedTransitionConfig(before.tag);
-      if (!config) {
-        continue;
+      auto animation = run.config;
+      if (!isOutsideSurfaceLayoutRoot(collectedTransition.nodes[BEFORE])) {
+        const auto config = layoutAnimationsManager_->getSharedTransitionConfig(before.tag);
+        if (!config) {
+          continue;
+        }
+        animation = config->animation;
       }
       if (run.target != afterNode) {
         transaction.restoreRequests.push_back({sharedTag, run.target});
@@ -1396,7 +1400,7 @@ void LayoutAnimationsProxy::handleSharedTransitionsStart(
         }
       }
       run.target = afterNode;
-      run.config = config->animation;
+      run.config = animation;
       adjustForNativePlacement(collectedTransition, AFTER);
       if (run.carrier->placement() == CarrierPlacement::NESTED && !keepsNesting(run.carrier, run.target)) {
         moveNestedCarrierToRoot(run, transaction.filteredMutations, propsParserContext);
@@ -1409,7 +1413,7 @@ void LayoutAnimationsProxy::handleSharedTransitionsStart(
             carrierTag,
             carrierAfter,
             ownCarrierView(target, run.carrier, propsParserContext).props,
-            config->animation,
+            animation,
             restartContentFade(run));
         continue;
       }
@@ -1419,7 +1423,7 @@ void LayoutAnimationsProxy::handleSharedTransitionsStart(
             carrierAnimation(run).currentView,
             carrierAfter,
             ownCarrierView(target, run.carrier, propsParserContext).props,
-            config->animation,
+            animation,
             restartContentFade(run));
       }
     }

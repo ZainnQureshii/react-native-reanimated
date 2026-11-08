@@ -115,7 +115,7 @@ function RetargetScreens({
   return (
     <View style={styles.root}>
       <SharedTransitionBoundary isActive={!active}>
-        <View style={styles.sourceOffset}>
+        <View collapsable={false} style={styles.sourceOffset}>
           <Endpoint name="source" transition={transition} />
         </View>
       </SharedTransitionBoundary>
@@ -301,7 +301,7 @@ describe('Shared transitions and Android layout roots', () => {
         await render(screens(true, true, false));
         await waitForFrames(3);
         await advanceAnimationTimer(400);
-        await render(screens(true, false, candidate));
+        await render(screens(true, !candidate, candidate));
         await waitForFrames(3);
         if (candidate) await expectEndpoint('candidate', 210, 0.8);
         await advanceAnimationTimer(200);
