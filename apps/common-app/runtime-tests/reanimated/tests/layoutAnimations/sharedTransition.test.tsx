@@ -14,6 +14,7 @@ import {
   expect,
   expectEventually,
   getTestComponent,
+  mockAnimationTimer,
   notify,
   render,
   test,
@@ -81,29 +82,35 @@ function PolicyScreens({
   active,
   sourceTransition,
   targetTransition,
+  offset = false,
 }: {
   active: boolean;
   sourceTransition: SharedTransition;
   targetTransition: SharedTransition;
+  offset?: boolean;
 }) {
   const source = useTestRef('source');
   const target = useTestRef('target');
   return (
     <View style={styles.container}>
       <SharedTransitionBoundary isActive={!active}>
-        <Animated.View
-          ref={source}
-          sharedTransitionTag="mixed-policy"
-          sharedTransitionStyle={sourceTransition}
-          style={styles.source}
-        />
+        <View
+          collapsable={false}
+          style={offset ? styles.sourceOffset : undefined}>
+          <Animated.View
+            ref={source}
+            sharedTransitionTag="mixed-policy"
+            sharedTransitionStyle={sourceTransition}
+            style={[styles.source, offset && styles.sourceOpacity]}
+          />
+        </View>
       </SharedTransitionBoundary>
       <SharedTransitionBoundary isActive={active}>
         <Animated.View
           ref={target}
           sharedTransitionTag="mixed-policy"
           sharedTransitionStyle={targetTransition}
-          style={styles.target}
+          style={[styles.target, offset && styles.targetOpacity]}
         />
       </SharedTransitionBoundary>
     </View>
@@ -229,6 +236,51 @@ describe('Shared element transition between boundaries', () => {
     await waitForFrames();
     await render(<NestedTextScreens targetActive />);
     await wait(500);
+  });
+
+  test('restores a moving carrier when reduced motion skips the return', async () => {
+    await mockAnimationTimer();
+    const sourceResults: boolean[] = [];
+    const targetResults: boolean[] = [];
+    const sourceTransition = createTransition(
+      sourceResults,
+      SharedTransition.duration(4000).reduceMotion(ReduceMotion.Never)
+    );
+    const targetTransition = createTransition(
+      targetResults,
+      SharedTransition.duration(4000).reduceMotion(ReduceMotion.Always)
+    );
+    const screens = (active: boolean) => (
+      <PolicyScreens
+        offset
+        active={active}
+        sourceTransition={sourceTransition}
+        targetTransition={targetTransition}
+      />
+    );
+    await render(screens(false));
+    await waitForFrames(3);
+    const home = await getTestComponent('source').getMountedViewProps();
+    for (let cycle = 1; cycle <= 10; cycle++) {
+      await render(screens(true));
+      await waitForFrames(20);
+      const moving = await getTestComponent('source').getMountedViewProps();
+      expect(moving?.width !== home?.width).toBe(true);
+      await render(screens(false));
+      await waitForFrames(5);
+      await expectMountedAtLayout('source', 0.6);
+      await expectMountedAtLayout('target', 0.7);
+      await expectEventually(() => sourceResults.length).toBe(cycle);
+      await expectEventually(() => targetResults.length).toBe(cycle);
+      expect(sourceResults).toBe(Array(cycle).fill(false));
+      expect(targetResults).toBe(Array(cycle).fill(true));
+      await wait(500);
+      const restored = await getTestComponent('source').getMountedViewProps();
+      expect(restored?.x).toBe(home?.x, ComparisonMode.PIXEL);
+      expect(restored?.y).toBe(home?.y, ComparisonMode.PIXEL);
+      expect(restored?.width).toBe(home?.width, ComparisonMode.PIXEL);
+      expect(restored?.opacity).toBe(0.6, ComparisonMode.FLOAT_DISTANCE);
+    }
   });
 
   test('runs to completion', async () => {
@@ -422,6 +474,9 @@ describe('Shared element transition between boundaries', () => {
 });
 
 const styles = StyleSheet.create({
+  sourceOffset: { marginTop: 120, marginLeft: 40 },
+  sourceOpacity: { opacity: 0.6 },
+  targetOpacity: { opacity: 0.7 },
   container: { width: 300, height: 400 },
   identical: {
     position: 'absolute',

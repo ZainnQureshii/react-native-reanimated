@@ -81,6 +81,7 @@ struct SharedTransitionRun {
   SharedTransitionLifecycle lifecycle = SharedTransitionLifecycle::ACTIVE;
   std::optional<ContentFade> contentFade;
   bool targetOffWindow = false;
+  bool restoreCarrierOnFinish = false;
 };
 
 // The first reason, in this order, why a run does not land in a pull.

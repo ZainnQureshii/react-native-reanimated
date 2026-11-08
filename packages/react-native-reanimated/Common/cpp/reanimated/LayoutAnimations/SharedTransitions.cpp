@@ -201,6 +201,7 @@ void LayoutAnimationsProxy::resolveTransitionLifecycle(
 }
 
 bool LayoutAnimationsProxy::settleUncommittedScreenPop(TransactionMeta &transaction) const {
+  uncommittedScreenPop_->cancelled |= transaction.surfaceDropped;
   if (uncommittedScreenPop_->sourceScreen && !uncommittedScreenPop_->cancelled) {
     return false;
   }
@@ -411,6 +412,9 @@ void LayoutAnimationsProxy::skipSharedTransition(
   endSharedTransitionOf(sharedTag, transaction, propsParserContext);
   for (const auto &node : collected.nodes) {
     if (node) {
+      if (node->isCarrier()) {
+        runOfCarrier(node)->restoreCarrierOnFinish = true;
+      }
       transaction.restoreRequests.push_back({sharedTag, node});
     }
   }
@@ -1703,6 +1707,9 @@ void LayoutAnimationsProxy::finishSharedTransition(
   } else if (run.contentFade) {
     restoreFadedChildren(*run.contentFade, {}, hiddenViewTags(), transaction.filteredMutations, propsParserContext);
   }
+  if (run.restoreCarrierOnFinish) {
+    transaction.restoreRequests.push_back({run.sharedTag, run.carrier});
+  }
   if (landed && !targetGone && run.contentFade && run.carrier != run.target) {
     fadeInTargetContent(run, transaction, propsParserContext);
   }
@@ -2335,7 +2342,11 @@ void LayoutAnimationsProxy::endSharedTransitionOf(
     TransactionMeta &transaction,
     const PropsParserContext &propsParserContext) const {
   if (auto *run = activeSharedTransitionRun(sharedTag)) {
-    finishSharedTransition(*run, transaction, propsParserContext);
+    if (hasUnqueuedCarrierFrame(run->carrier->current.tag)) {
+      retireSharedTransition(*run);
+    } else {
+      finishSharedTransition(*run, transaction, propsParserContext);
+    }
   }
 }
 
