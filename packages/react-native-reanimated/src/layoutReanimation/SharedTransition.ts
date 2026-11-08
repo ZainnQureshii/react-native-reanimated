@@ -161,11 +161,6 @@ export type ProgressSharedTransitionAnimation = (
   progress: number
 ) => StyleProps;
 
-export type SharedTransitionProgressConfig = {
-  animation: ProgressSharedTransitionAnimation;
-  callback?: (finished: boolean) => void;
-};
-
 type ChangedStyle = { key: string; current: unknown; target: unknown };
 
 // `globalOrigin*` and `transformMatrix` repeat `origin*` and `transform`.
@@ -712,13 +707,6 @@ export class SharedTransition
       }
       // Animated styles process only the colors of individually animated shadows.
       return withProcessedBoxShadow(withTransformMatrixAsTransform(style));
-    };
-  }
-
-  getProgressConfig(): SharedTransitionProgressConfig {
-    return {
-      animation: this.getProgressAnimation(),
-      callback: this.callbackV,
     };
   }
 

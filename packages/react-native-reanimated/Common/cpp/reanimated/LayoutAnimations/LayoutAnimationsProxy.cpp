@@ -1311,12 +1311,12 @@ void LayoutAnimationsProxy::clearSurfaceState() const {
     releaseUnmappedContentFadeConfigs();
     if (transition_) {
       for (auto &config : transition_->progressCallbacks) {
-        queueProgressCallback(std::move(config), false);
+        scheduleSharedTransitionCallback(std::move(config), false);
       }
     }
     if (uncommittedScreenPop_) {
       for (auto &config : uncommittedScreenPop_->progressCallbacks) {
-        queueProgressCallback(std::move(config), false);
+        scheduleSharedTransitionCallback(std::move(config), false);
       }
     }
     carrierPlacements_.clear();

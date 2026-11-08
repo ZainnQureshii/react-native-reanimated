@@ -11,7 +11,7 @@ import { configureLayoutAnimationBatch } from './core';
 import type { ReanimatedKeyframe } from './layoutReanimation/animationBuilder/Keyframe';
 import { initializeLayoutAnimationsManager } from './layoutReanimation/animationsManager';
 import type {
-  SharedTransitionProgressConfig,
+  ProgressSharedTransitionAnimation,
   SharedTransitionContentFade,
 } from './layoutReanimation/SharedTransition';
 
@@ -68,7 +68,7 @@ export const updateLayoutAnimations: (
   config?:
     | ReanimatedKeyframe
     | LayoutAnimationFunction
-    | SharedTransitionProgressConfig,
+    | ProgressSharedTransitionAnimation,
   isUnmounting?: boolean,
   sharedTransitionTag?: string,
   sharedTransitionContentFade?: SharedTransitionContentFade,
@@ -92,7 +92,7 @@ export const updateLayoutAnimations: (
       sharedTransitionTag,
       sharedTransitionReduceMotion,
       sharedTransitionCallback: sharedTransitionCallback
-        ? createSerializable({ callback: sharedTransitionCallback })
+        ? createSerializable(sharedTransitionCallback)
         : undefined,
       sharedTransitionContentFade: sharedTransitionContentFade
         ? {

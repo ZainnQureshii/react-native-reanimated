@@ -6,7 +6,7 @@ import type {
 } from './commonTypes';
 import type { ReanimatedKeyframe } from './layoutReanimation/animationBuilder/Keyframe';
 import type {
-  SharedTransitionProgressConfig,
+  ProgressSharedTransitionAnimation,
   SharedTransitionContentFade,
 } from './layoutReanimation/SharedTransition';
 
@@ -32,7 +32,7 @@ export const updateLayoutAnimations: (
   config?:
     | ReanimatedKeyframe
     | LayoutAnimationFunction
-    | SharedTransitionProgressConfig,
+    | ProgressSharedTransitionAnimation,
   isUnmounting?: boolean,
   sharedTransitionTag?: string,
   sharedTransitionContentFade?: SharedTransitionContentFade,

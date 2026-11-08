@@ -436,11 +436,10 @@ describe('SharedTransition native configuration', () => {
   test('keeps the callback without running the animation factory', () => {
     const factory = jest.fn(() => ({ width: 300 }));
     const callback = jest.fn();
-    const config = SharedTransition.custom(factory)
-      .withCallback(callback)
-      .getProgressConfig();
-    expect(config.callback).toBe(callback);
+    const builder = SharedTransition.custom(factory).withCallback(callback);
+    const animation = builder.getProgressAnimation();
+    expect(builder.callbackV).toBe(callback);
     expect(factory).not.toHaveBeenCalled();
-    expect(config.animation(VALUES, 0.5).width).toBe(200);
+    expect(animation(VALUES, 0.5).width).toBe(200);
   });
 });

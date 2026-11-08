@@ -215,9 +215,18 @@ struct LayoutAnimationsProxy : public LayoutAnimationsProxyCommon {
   std::shared_ptr<SharedTransitionManager> sharedTransitionManager_;
   std::weak_ptr<WorkletRuntime> uiRuntimeWeak_;
   std::function<void(std::function<void()>)> scheduleOnNextUIFrame_;
-  void queueProgressCallback(std::shared_ptr<Serializable> config, bool finished) const;
-  void filterReducedMotionSharedTransitions(TransactionMeta &transaction, const PropsParserContext &propsParserContext)
-      const;
+  void scheduleSharedTransitionCallback(std::shared_ptr<Serializable> callback, bool finished) const;
+  void skipSharedTransition(
+      const SharedTag &sharedTag,
+      const CollectedTransition &collected,
+      SharedTransitionDriver driver,
+      std::shared_ptr<Serializable> callback,
+      TransactionMeta &transaction,
+      const PropsParserContext &propsParserContext) const;
+  void filterSharedTransitionStarts(
+      SharedTransitionDriver driver,
+      TransactionMeta &transaction,
+      const PropsParserContext &propsParserContext) const;
   mutable std::unordered_map<Tag, std::shared_ptr<LightNode>> lightNodes_;
   mutable std::unordered_set<Tag> unmappedContentFadeTags_;
   // removed components whose views are still shown; their shared transition configs are released when they unmap
@@ -305,9 +314,7 @@ struct LayoutAnimationsProxy : public LayoutAnimationsProxyCommon {
       const ShadowView &after,
       const Props::Shared &frameProps,
       const std::shared_ptr<Serializable> &config) const;
-  void applyProgressAnimations() const;
-  void initializeProgressAnimation(Tag tag) const override;
-  void applyProgressAnimation(const SharedTransitionRun &run) const;
+  void applyProgressAnimations();
   void handleProgressTransition(
       TransactionMeta &transaction,
       const ShadowViewMutationList &mutations,

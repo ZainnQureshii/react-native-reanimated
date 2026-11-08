@@ -77,6 +77,39 @@ function Screens({
   );
 }
 
+function PolicyScreens({
+  active,
+  sourceTransition,
+  targetTransition,
+}: {
+  active: boolean;
+  sourceTransition: SharedTransition;
+  targetTransition: SharedTransition;
+}) {
+  const source = useTestRef('source');
+  const target = useTestRef('target');
+  return (
+    <View style={styles.container}>
+      <SharedTransitionBoundary isActive={!active}>
+        <Animated.View
+          ref={source}
+          sharedTransitionTag="mixed-policy"
+          sharedTransitionStyle={sourceTransition}
+          style={styles.source}
+        />
+      </SharedTransitionBoundary>
+      <SharedTransitionBoundary isActive={active}>
+        <Animated.View
+          ref={target}
+          sharedTransitionTag="mixed-policy"
+          sharedTransitionStyle={targetTransition}
+          style={styles.target}
+        />
+      </SharedTransitionBoundary>
+    </View>
+  );
+}
+
 // On Android a nested Text forms a view whose props are TextProps, not ViewProps.
 function NestedTextScreens({ targetActive }: { targetActive: boolean }) {
   return (
@@ -263,6 +296,50 @@ describe('Shared element transition between boundaries', () => {
     expect(recorded.length).toBe(0);
     await expectMountedAtLayout('source', 1);
   });
+
+  test.each([
+    [ReduceMotion.Always, ReduceMotion.Never, 0],
+    [ReduceMotion.Never, ReduceMotion.Always, 1],
+  ] as const)(
+    'uses the source policy ${0} with target policy ${1}',
+    async ([sourceMotion, targetMotion, factoryCalls]) => {
+      const sourceFinished: boolean[] = [];
+      const targetFinished: boolean[] = [];
+      const recorded: RecordedValues[] = [];
+      const sourceTransition = createTransition(
+        sourceFinished,
+        createRecordingTransition(recorded).reduceMotion(sourceMotion)
+      );
+      const targetTransition = createTransition(
+        targetFinished,
+        SharedTransition.reduceMotion(targetMotion)
+      );
+      await render(
+        <PolicyScreens
+          active={false}
+          sourceTransition={sourceTransition}
+          targetTransition={targetTransition}
+        />
+      );
+      await waitForFrames(3);
+      await render(
+        <PolicyScreens
+          active
+          sourceTransition={sourceTransition}
+          targetTransition={targetTransition}
+        />
+      );
+      await waitForNotification('shared-transition-finished');
+      await waitForFrames(3);
+      expect(sourceFinished).toBe([true]);
+      expect(targetFinished).toBe([]);
+      expect(recorded.length).toBe(factoryCalls);
+      await expectMountedAtLayout('target', 1);
+      if (sourceMotion === ReduceMotion.Always) {
+        await expectMountedAtLayout('source', 1);
+      }
+    }
+  );
 
   test('runs a transition between views that do not differ', async () => {
     const finished: boolean[] = [];

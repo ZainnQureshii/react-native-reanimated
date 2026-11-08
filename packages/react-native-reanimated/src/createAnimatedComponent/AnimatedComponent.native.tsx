@@ -452,7 +452,7 @@ export default class AnimatedComponent
       useNativeId
         ? LayoutAnimationType.SHARED_ELEMENT_TRANSITION_PROGRESS_NATIVE_ID
         : LayoutAnimationType.SHARED_ELEMENT_TRANSITION_PROGRESS,
-      sharedTransition.getProgressConfig(),
+      sharedTransition.getProgressAnimation(),
       undefined,
       undefined,
       undefined,
