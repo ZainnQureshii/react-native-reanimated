@@ -79,7 +79,7 @@ class LayoutAnimationsManager {
   std::shared_ptr<Serializable> getLayoutAnimationConfig(const int tag, const LayoutAnimationType type);
   bool shouldReduceSharedTransition(int tag);
   bool hasLayoutAnimationConfigs(const LayoutAnimationType type);
-  std::optional<SharedTransitionConfig> getSharedTransitionConfig(const int tag, bool progress = false);
+  std::optional<SharedTransitionConfig> getSharedTransitionConfig(const int tag);
   std::shared_ptr<Serializable> takeExitingAnimationConfigAndClearTag(int tag);
   bool startLayoutAnimation(
       jsi::Runtime &rt,
@@ -108,8 +108,8 @@ class LayoutAnimationsManager {
   std::unordered_map<int, std::shared_ptr<Serializable>> enteringAnimationsForNativeID_;
   std::unordered_map<int, SharedTransitionConfig> sharedTransitionsForNativeID_;
   std::unordered_map<int, SharedTransitionConfig> sharedTransitions_;
-  std::unordered_map<int, SharedTransitionConfig> progressSharedTransitions_;
-  std::unordered_map<int, SharedTransitionConfig> progressSharedTransitionsForNativeID_;
+  std::unordered_map<int, std::shared_ptr<Serializable>> progressSharedTransitions_;
+  std::unordered_map<int, std::shared_ptr<Serializable>> progressSharedTransitionsForNativeID_;
   std::unordered_map<int, std::shared_ptr<Serializable>> enteringAnimations_;
   std::unordered_map<int, std::shared_ptr<Serializable>> exitingAnimations_;
   std::unordered_map<int, std::shared_ptr<Serializable>> layoutAnimations_;

@@ -452,12 +452,7 @@ export default class AnimatedComponent
       useNativeId
         ? LayoutAnimationType.SHARED_ELEMENT_TRANSITION_PROGRESS_NATIVE_ID
         : LayoutAnimationType.SHARED_ELEMENT_TRANSITION_PROGRESS,
-      sharedTransition.getProgressAnimation(),
-      undefined,
-      undefined,
-      undefined,
-      sharedTransition.getReduceMotion(),
-      sharedTransition.callbackV
+      sharedTransition.getProgressAnimation()
     );
     this._sharedTransition = sharedTransition;
     this._sharedTransitionTag = this.props.sharedTransitionTag;

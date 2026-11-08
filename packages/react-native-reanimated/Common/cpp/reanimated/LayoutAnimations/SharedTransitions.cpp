@@ -429,12 +429,12 @@ void LayoutAnimationsProxy::filterSharedTransitionStarts(
     const SharedTransitionDriver driver,
     TransactionMeta &transaction,
     const PropsParserContext &propsParserContext) const {
-  const bool systemReducedMotion = layoutAnimationsManager_->isReducedMotion();
   std::erase_if(transaction.transitions, [&](const auto &entry) {
     const auto &[sharedTag, collected] = entry;
-    const auto config = layoutAnimationsManager_->getSharedTransitionConfig(
-        collected.transition.snapshot[BEFORE].tag, driver == SharedTransitionDriver::GESTURE);
-    if (config && !config->reduceMotion.value_or(systemReducedMotion) && !isOffWindow(collected.nodes[BEFORE])) {
+    const auto sourceTag = collected.transition.snapshot[BEFORE].tag;
+    const auto config = layoutAnimationsManager_->getSharedTransitionConfig(sourceTag);
+    if (config && !layoutAnimationsManager_->shouldReduceSharedTransition(sourceTag) &&
+        !isOffWindow(collected.nodes[BEFORE])) {
       return false;
     }
     skipSharedTransition(
