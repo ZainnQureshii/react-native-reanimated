@@ -294,6 +294,7 @@ void LayoutAnimationsProxy::handleProgressTransition(
             sharedTransitionConfig ? sharedTransitionConfig->contentFade : std::nullopt,
             transaction,
             propsParserContext);
+        run.progressCallback = sharedTransitionConfig ? sharedTransitionConfig->callback : nullptr;
         restartContentFade(run);
 
         const auto target = targetInCarrierSpace(run, after, propsParserContext);
@@ -546,8 +547,6 @@ SharedTransitionRun &LayoutAnimationsProxy::startSharedTransitionRun(
   run->target = nodes[AFTER];
   run->config = config;
   run->driver = driver;
-  const auto sourceConfig = layoutAnimationsManager_->getSharedTransitionConfig(before.tag);
-  run->progressCallback = driver == SharedTransitionDriver::GESTURE && sourceConfig ? sourceConfig->callback : nullptr;
   run->targetOffWindow = false;
   if (run->carrier->placement() == CarrierPlacement::NESTED && !keepsNesting(run->carrier, run->target)) {
     moveNestedCarrierToRoot(*run, transaction.filteredMutations, propsParserContext);
