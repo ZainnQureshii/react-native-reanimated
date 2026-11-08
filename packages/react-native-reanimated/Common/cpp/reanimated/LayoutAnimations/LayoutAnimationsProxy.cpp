@@ -685,7 +685,7 @@ void LayoutAnimationsProxy::updateLightTree(
               mutation.parentTag,
               propsParserContext));
         } else if (
-            sharedTag && isInsideInactiveBoundary(node) &&
+            sharedTag && isInsideInactiveBoundary(node) && !isOutsideSurfaceLayoutRoot(node) &&
             !layoutAnimationsManager_->shouldReduceSharedTransition(tag)) {
           hideInSharedElement(*sharedTag, node);
           filteredMutations.push_back(

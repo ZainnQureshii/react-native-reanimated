@@ -226,6 +226,7 @@ struct LayoutAnimationsProxy : public LayoutAnimationsProxyCommon {
       std::shared_ptr<Serializable> callback,
       TransactionMeta &transaction,
       const PropsParserContext &propsParserContext) const;
+  bool isOutsideSurfaceLayoutRoot(const std::shared_ptr<LightNode> &node) const;
   void filterSharedTransitionStarts(
       SharedTransitionDriver driver,
       TransactionMeta &transaction,
