@@ -546,9 +546,8 @@ SharedTransitionRun &LayoutAnimationsProxy::startSharedTransitionRun(
   run->target = nodes[AFTER];
   run->config = config;
   run->driver = driver;
-  const auto progressConfig = layoutAnimationsManager_->getSharedTransitionConfig(before.tag, true);
-  run->progressCallback =
-      driver == SharedTransitionDriver::GESTURE && progressConfig ? progressConfig->callback : nullptr;
+  const auto sourceConfig = layoutAnimationsManager_->getSharedTransitionConfig(before.tag);
+  run->progressCallback = driver == SharedTransitionDriver::GESTURE && sourceConfig ? sourceConfig->callback : nullptr;
   run->targetOffWindow = false;
   if (run->carrier->placement() == CarrierPlacement::NESTED && !keepsNesting(run->carrier, run->target)) {
     moveNestedCarrierToRoot(*run, transaction.filteredMutations, propsParserContext);
