@@ -51,7 +51,11 @@ std::unique_lock<std::recursive_mutex> LayoutAnimationsManager::lockAndFlushConf
       continue;
     }
     if (type == LayoutAnimationType::SHARED_ELEMENT_TRANSITION_PROGRESS_NATIVE_ID) {
-      progressSharedTransitionsForNativeID_[tag] = config;
+      if (config == nullptr) {
+        progressSharedTransitionsForNativeID_.erase(tag);
+      } else {
+        progressSharedTransitionsForNativeID_[tag] = config;
+      }
       continue;
     }
     if (config == nullptr) {

@@ -414,8 +414,9 @@ void LayoutAnimationsProxy::skipSharedTransition(
     if (node) {
       if (node->isCarrier()) {
         runOfCarrier(node)->restoreCarrierOnFinish = true;
+      } else {
+        transaction.restoreRequests.push_back({sharedTag, node});
       }
-      transaction.restoreRequests.push_back({sharedTag, node});
     }
   }
   if (!callback) {
