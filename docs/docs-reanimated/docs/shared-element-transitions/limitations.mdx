@@ -25,7 +25,9 @@ On Android, SET does not start when either endpoint is inside another layout roo
 
 A native host that puts its children in another window must mark its shadow node with React Native's `RootNodeKind` trait. SET cannot detect hosts that move children without this trait. The trait marks a layout root, not a window identity, so SET also refuses two endpoints in the same Modal. Inline and portal content can use SET when it stays under the surface's layout root.
 
-When an active SET gets a distinct new target inside another layout root, it refuses that target. The new target stays visible. The accepted flight keeps its old destination and callback; its moving view can remain visible until that flight ends. A later valid target can still update that flight. Refusal does not start a new attempt or call the new target's callback.
+When the active boundary stays the same, an active SET refuses a distinct new target inside another layout root. The new target stays visible. The accepted flight keeps its old destination and callback; its moving view can remain visible until that flight ends. A later valid target can still update that flight. Refusal does not start a new attempt or call the new target's callback.
+
+A boundary change starts a new attempt. If SET refuses that attempt, it ends the old attempt for that shared tag and applies the new attempt's skip rules. This also applies when the old target stays mounted.
 
 Do not change the host or layout-root ancestry of an accepted endpoint during its flight. This includes changing a sheet's `nativeOverlay` value. This case is unsupported. These checks do not provide full cross-window transitions. iOS keeps its existing window overlay behavior.
 
