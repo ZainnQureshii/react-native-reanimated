@@ -29,7 +29,7 @@ function Endpoint({
   name,
   transition,
 }: {
-  name: 'source' | 'target' | 'candidate';
+  name: 'source' | 'target' | 'candidate' | 'later';
   transition: SharedTransition;
 }) {
   const ref = useTestRef(`window-${name}`);
@@ -101,25 +101,34 @@ function RetargetScreens({
   keepTarget,
   transition,
   candidateTransition,
+  candidateActive = false,
+  later = false,
 }: {
   active: boolean;
   candidate: boolean;
   keepTarget: boolean;
   transition: SharedTransition;
   candidateTransition: SharedTransition;
+  candidateActive?: boolean;
+  later?: boolean;
 }) {
   return (
     <View style={styles.root}>
       <SharedTransitionBoundary isActive={!active}>
-        <Endpoint name="source" transition={transition} />
+        <View style={styles.sourceOffset}>
+          <Endpoint name="source" transition={transition} />
+        </View>
       </SharedTransitionBoundary>
-      <SharedTransitionBoundary isActive={active}>
+      <SharedTransitionBoundary isActive={active && !candidateActive}>
         {keepTarget && <Endpoint name="target" transition={transition} />}
         {candidate && (
           <Modal transparent animationType="none">
-            <Endpoint name="candidate" transition={candidateTransition} />
+            <SharedTransitionBoundary isActive={candidateActive}>
+              <Endpoint name="candidate" transition={candidateTransition} />
+            </SharedTransitionBoundary>
           </Modal>
         )}
+        {later && <Endpoint name="later" transition={transition} />}
       </SharedTransitionBoundary>
     </View>
   );
@@ -215,6 +224,106 @@ describe('Shared transitions and Android layout roots', () => {
     expect(results).toBe([true]);
   });
 
+  androidTest(
+    'skips a new navigation while the old carrier moves',
+    async () => {
+      await mockAnimationTimer({ autoAdvance: false });
+      const results: boolean[] = [];
+      const transition = recordingTransition(results);
+      const screens = (active: boolean, candidateActive = false) => (
+        <RetargetScreens
+          active={active}
+          candidate={candidateActive}
+          candidateActive={candidateActive}
+          keepTarget
+          transition={transition}
+          candidateTransition={transition}
+        />
+      );
+      await render(screens(false));
+      await waitForFrames(3);
+      const sourceTag = getTestComponent('window-source').getTag();
+      const home =
+        await getTestComponent('window-source').getMountedViewProps();
+      await render(screens(true));
+      await waitForFrames(3);
+      await advanceAnimationTimer(400);
+      const width = await mountedWidth(sourceTag);
+      expect(width !== undefined && width > 60 && width < 150).toBe(true);
+      await render(screens(true, true));
+      await waitForFrames(3);
+      await expectEndpoint('candidate', 210, 0.8);
+      await expectSettledEndpoint('target', 150, 0.7);
+      await expectSettledEndpoint('source', 60, 0);
+      await expectEventually(() => results.length).toBe(2);
+      expect([...results].sort()).toBe([false, true]);
+      const restored =
+        await getTestComponent('window-source').getMountedViewProps();
+      expect(restored?.x).toBe(home?.x, ComparisonMode.PIXEL);
+      expect(restored?.y).toBe(home?.y, ComparisonMode.PIXEL);
+      await advanceAnimationTimer(1600);
+      expect(results.length).toBe(2);
+      await render(screens(false));
+      await expectSettledEndpoint('source', 60, 0.6);
+      await expectEventually(() => results.length).toBe(3);
+      expect(results[2]).toBe(true);
+    }
+  );
+
+  androidTest(
+    'accepts a supported target after refusing a retarget',
+    async () => {
+      const controls: boolean[][] = [];
+      for (const candidate of [false, true]) {
+        await mockAnimationTimer({ autoAdvance: false });
+        const results: boolean[] = [];
+        const candidateResults: boolean[] = [];
+        const transition = recordingTransition(results);
+        const candidateTransition = recordingTransition(candidateResults);
+        const screens = (
+          active: boolean,
+          keepTarget: boolean,
+          showCandidate: boolean,
+          later = false
+        ) => (
+          <RetargetScreens
+            active={active}
+            candidate={showCandidate}
+            keepTarget={keepTarget}
+            later={later}
+            transition={transition}
+            candidateTransition={candidateTransition}
+          />
+        );
+        await render(screens(false, true, false));
+        await waitForFrames(3);
+        const sourceTag = getTestComponent('window-source').getTag();
+        await render(screens(true, true, false));
+        await waitForFrames(3);
+        await advanceAnimationTimer(400);
+        await render(screens(true, false, candidate));
+        await waitForFrames(3);
+        if (candidate) await expectEndpoint('candidate', 210, 0.8);
+        await advanceAnimationTimer(200);
+        await render(screens(true, false, candidate, true));
+        await waitForFrames(3);
+        await expectEndpoint('later', 120, 0);
+        await advanceAnimationTimer(400);
+        const width = await mountedWidth(sourceTag);
+        expect(width !== undefined && width > 60 && width < 150).toBe(true);
+        await advanceAnimationTimer(1600);
+        await expectSettledEndpoint('later', 120, 0.5);
+        if (candidate) await expectEndpoint('candidate', 210, 0.8);
+        expect(candidateResults).toBe([]);
+        await waitForFrames(3);
+        controls.push([...results]);
+        await render(<View />);
+        await waitForFrames(3);
+      }
+      expect(controls[1]).toBe(controls[0]);
+    }
+  );
+
   androidTest.each([[true], [false]] as const)(
     'refuses an unsupported retarget (old target retained: ${0})',
     async ([keepTarget]) => {
@@ -296,7 +405,7 @@ function recordingTransition(results: boolean[]) {
 }
 
 async function expectEndpoint(
-  name: 'source' | 'target' | 'candidate',
+  name: 'source' | 'target' | 'candidate' | 'later',
   width: number,
   opacity: number
 ) {
@@ -306,7 +415,7 @@ async function expectEndpoint(
 }
 
 async function expectSettledEndpoint(
-  name: 'source' | 'target' | 'candidate',
+  name: 'source' | 'target' | 'candidate' | 'later',
   width: number,
   opacity: number
 ) {
@@ -332,6 +441,14 @@ function mountedWidth(tag: number) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  sourceOffset: { marginTop: 120, marginLeft: 40 },
+  later: {
+    width: 120,
+    height: 120,
+    opacity: 0.5,
+    marginTop: 100,
+    backgroundColor: '#aa22bb',
+  },
   source: { width: 60, height: 60, opacity: 0.6, backgroundColor: '#dd5522' },
   target: {
     marginTop: 200,
@@ -353,4 +470,5 @@ const endpointStyles = {
   source: styles.source,
   target: styles.target,
   candidate: styles.candidate,
+  later: styles.later,
 };
